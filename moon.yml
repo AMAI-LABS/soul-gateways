@@ -1,0 +1,59 @@
+# https://moonrepo.dev/docs/config/project
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+type: 'library'
+language: 'rust'
+stack: 'backend'
+platform: 'system'
+
+project:
+  name: 'soul-gateways'
+  description: 'Messaging gateway implementations: Telegram, iMessage, WhatsApp'
+  channel: '#amai-infra'
+  maintainers: ['@amai-labs']
+
+tags:
+  - 'rust'
+  - 'library'
+  - 'gateways'
+  - 'messaging'
+
+fileGroups:
+  sources:
+    - 'src/**/*.rs'
+  configs:
+    - 'Cargo.toml'
+
+tasks:
+  build:
+    command: 'cargo build'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+
+  check:
+    command: 'cargo check'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+
+  test:
+    command: 'cargo test'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+
+  lint:
+    command: 'cargo clippy -- -D warnings'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+
+  fmt:
+    command: 'cargo fmt --check'
+    inputs:
+      - '@group(sources)'
+
+  fmt-fix:
+    command: 'cargo fmt'
+    local: true
