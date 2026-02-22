@@ -1,6 +1,6 @@
 [package]
 name = "soul-gateways"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["AMAI Labs <team@amai.net>"]
 description = "Messaging gateway implementations for soul-core agents — Telegram, iMessage, WhatsApp"
@@ -16,7 +16,7 @@ imessage = ["dep:rusqlite"]
 whatsapp = []
 
 [dependencies]
-soul-core = { version = "0.11.1", path = "../soul-core" }
+soul-core = { version = "0.12.0", path = "../soul-core" }
 async-trait = "0.1"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
