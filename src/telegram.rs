@@ -57,6 +57,55 @@ impl TelegramGateway {
     fn api_url(&self, method: &str) -> String {
         format!("{}/bot{}/{}", TELEGRAM_API, self.token, method)
     }
+
+    /// Send a single `sendChatAction typing` event to the given chat.
+    /// Telegram shows the typing indicator for ~5s after each call.
+    pub async fn send_typing(&self, channel_id: &str) -> SoulResult<()> {
+        let chat_id = channel_id
+            .parse::<i64>()
+            .map_err(|e| SoulError::Provider(format!("Invalid chat_id: {e}")))?;
+        let url = self.api_url("sendChatAction");
+        let body = serde_json::json!({
+            "chat_id": chat_id,
+            "action": "typing",
+        });
+        // Best-effort — ignore errors (non-critical UX feature)
+        let _ = post_with_retry(&self.client, &url, &body, 1, "sendChatAction").await;
+        Ok(())
+    }
+
+    /// Spawn a background task that sends typing indicators every 4s until `cancel_rx` fires.
+    /// Returns a `tokio::sync::oneshot::Sender` — drop or send on it to stop the loop.
+    pub fn start_typing_loop(
+        &self,
+        channel_id: String,
+    ) -> tokio::sync::oneshot::Sender<()> {
+        let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+        let client = self.client.clone();
+        let url = self.api_url("sendChatAction");
+
+        tokio::spawn(async move {
+            loop {
+                let chat_id: i64 = match channel_id.parse() {
+                    Ok(id) => id,
+                    Err(_) => break,
+                };
+                let body = serde_json::json!({
+                    "chat_id": chat_id,
+                    "action": "typing",
+                });
+                let _ = post_with_retry(&client, &url, &body, 1, "sendChatAction").await;
+
+                // Wait 4s or until cancelled
+                tokio::select! {
+                    _ = &mut cancel_rx => break,
+                    _ = tokio::time::sleep(Duration::from_secs(4)) => {}
+                }
+            }
+        });
+
+        cancel_tx
+    }
 }
 
 /// Whether an HTTP status code indicates a retryable error.
